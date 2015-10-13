@@ -22,7 +22,7 @@ AM_COND_IF([HAVE_DOXYGEN], [AC_CONFIG_FILES([Doxyfile])])
 LT_INIT
 
 # Checks for libraries.
-PKG_CHECK_MODULES([LIBXDOT],[libxdot])
+PKG_CHECK_MODULES([LIBCGRAPH],[libcgraph])
 # add CADP dependency here
 
 # Checks for header files.
@@ -33,6 +33,6 @@ PKG_CHECK_MODULES([LIBXDOT],[libxdot])
 
 # Checks for library functions.
 AC_CONFIG_FILES([Makefile src/Makefile])
-AC_SUBST([LIBXDOT_CFLAGS])
-AC_SUBST([LIBXDOT_LIBS])
+AC_SUBST([LIBCGRAPH_CFLAGS])
+AC_SUBST([LIBCGRAPH_LIBS])
 AC_OUTPUT
