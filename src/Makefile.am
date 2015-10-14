@@ -1,10 +1,12 @@
+ACLOCAL_AMFLAGS = -I m4
 bin_PROGRAMS=cleaner
 cleaner_SOURCES=\
 		main.cpp\
-		edge.h\
-		node.h\
-		node.cpp\
+		graphtoBCGtranslator.cpp\
+		graphtoBCGtranslator.h\
 		types.h
-cleaner_CXXFLAGS = -std=c++11 $(LIBXDOT_CFLAGS)
-cleaner_LDADD = $(LIBXDOT_LIBS)
+cleaner_CXXFLAGS = -std=c++11
+cleaner_CPPFLAGS = $(BOOST_CPPFLAGS) $(CADP_BCG_CPPFLAGS)
+cleaner_LDFLAGS = $(BOOST_GRAPH_LDFLAGS) $(BOOST_REGEX_LDFLAGS)
+cleaner_LDADD = $(BOOST_GRAPH_LIBS) $(BOOST_REGEX_LIBS)
 

@@ -4,15 +4,14 @@
 AC_PREREQ([2.69])
 AC_INIT([Kayrebt::Cleaner], [0.1], [laurent.georget@inria.fr])
 AM_INIT_AUTOMAKE([1.11 foreign -Wall -Werror])
-AC_CONFIG_SRCDIR([src/node.h])
+AC_CONFIG_SRCDIR([src/types.h])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIRS([m4])
+AC_PROG_LIBTOOL
 AC_LANG([C++])
 
 # Checks for programs.
-AC_PROG_CC
-# We need GNU C++ compiler because we are building a plugin for gcc
-AC_PROG_CXX([g++])
+AC_PROG_CXX
 AC_CHECK_PROGS([DOXYGEN], [doxygen])
 if test -z "$DOXYGEN";
    then AC_MSG_WARN([[Doxygen not found - continuing without Doxygen support]])
@@ -24,7 +23,32 @@ LT_INIT
 # Checks for libraries.
 PKG_CHECK_MODULES([LIBCGRAPH],[libcgraph])
 # add CADP dependency here
+AC_ARG_WITH([cadp],[AS_HELP_STRING([--with-cadp=<path to CADP installation dir> @<:@default=$CADP@:>@])],
+	    [],[with_cadp=${CADP}])
+AC_MSG_CHECKING([for CADP in $with_cadp])
 
+USE_BCG=no
+AC_COMPILE_IFELSE(
+   [AC_LANG_SOURCE([ #include <$with_cadp/incl/bcg_user.h>
+   ])],
+   [
+     LIBS="$LIBS -L${with_cadp}/bin.`${with_cadp}/com/arch` -lBCG_IO -lBCG"
+     AC_LINK_IFELSE(
+     [AC_LANG_SOURCE([
+      #include <$with_cadp/incl/bcg_user.h>
+      int main() {
+        return (0);
+      }
+     ])],
+     [
+      AC_SUBST([CADP_BCG_CPPFLAGS],["-I${with_cadp}/incl"])
+      USE_BCG=yes
+      ],
+     [AC_MSG_FAILURE(["Could not link against CADP libraries in ${with_cadp}/bin.`${with_cadp}/com/arch`"])])
+   ],
+   [AC_MSG_FAILURE(["Could not find CADP headers in ${with_cadp}/incl"])]
+)
+AC_MSG_RESULT($USE_BCG)
 # Checks for header files.
 
 # Checks for typedefs, structures, and compiler characteristics.
@@ -32,7 +56,10 @@ PKG_CHECK_MODULES([LIBCGRAPH],[libcgraph])
 # AC_TYPE_SIZE_T
 
 # Checks for library functions.
+AC_CHECK_LIB([m],[cos])
+BOOST_REQUIRE([1.52])
+BOOST_GRAPH
+BOOST_REGEX
+
 AC_CONFIG_FILES([Makefile src/Makefile])
-AC_SUBST([LIBCGRAPH_CFLAGS])
-AC_SUBST([LIBCGRAPH_LIBS])
 AC_OUTPUT
