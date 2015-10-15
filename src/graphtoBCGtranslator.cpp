@@ -65,6 +65,10 @@ namespace kayrebt
 				}
 				BCG_IO_WRITE_BCG_EDGE(dot,const_cast<char*>(_graph[node].label.c_str()),foundNode->second);
 			}
+			if (its.first == its.second) { //for last node
+				BCG_TYPE_STATE_NUMBER state = _index++;
+				BCG_IO_WRITE_BCG_EDGE(dot,const_cast<char*>(_graph[node].label.c_str()),state);
+			}
 		}
 	}
 
