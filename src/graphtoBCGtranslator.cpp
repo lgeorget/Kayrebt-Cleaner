@@ -22,14 +22,14 @@ namespace kayrebt
 	NodeDescriptor GraphToBCGTranslator::findInitNode()
 	{
 		NodeIterator vi, vi_end;
-		bool found;
-		for (tie(vi, vi_end) = vertices(_graph); vi != vi_end && !found; ++vi) {
+		NodeDescriptor init = NO_NODE;
+		for (tie(vi, vi_end) = vertices(_graph); vi != vi_end && init == NO_NODE; ++vi) {
 			if (_graph[*vi].label == "INIT") {
-				found = true;
+				init = *vi;
 				cerr << "Found INIT node : " << _graph[*vi].id << endl;
 			}
 		}
-		return found ? *vi : NO_NODE;
+		return init;
 	}
 
 	GraphToBCGTranslator::GraphToBCGTranslator(const GraphType& graph) : _graph(graph)
