@@ -55,7 +55,7 @@ namespace kayrebt
 
 			auto its = out_edges(node,_graph);
 			for (auto it = its.first ; it != its.second ; ++it) {
-				cerr << "Exploring edge " << _graph[source(*it,_graph)].label << " -> " << _graph[target(*it,_graph)].label << endl;
+				cerr << "Exploring edge \"" << _graph[source(*it,_graph)].label << "\" -> \"" << _graph[target(*it,_graph)].label << "\"" << endl;
 				NodeDescriptor exitNode = target(*it,_graph);
 				auto foundNode = _visited.find(exitNode);
 				if (foundNode == _visited.cend()) {

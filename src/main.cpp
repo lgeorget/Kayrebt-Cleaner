@@ -29,6 +29,7 @@ static void build_BCG_file_name(const std::string& file, char* newfilename)
 int main(int argc, char** argv)
 {
 	if (argc < 2) {
+		cerr << "Usage: " << argv[0] << " <file.dot>" << endl;
 		return 1;
 	}
 
@@ -49,13 +50,13 @@ int main(int argc, char** argv)
 
 	std::ifstream dot(argv[1]);
 	try {
-	if (!read_graphviz(dot, graph, dp, "id")) {
-		cerr << "FATAL: Could not parse a graphviz graph from " << argv[1] << endl;
-		return 2;
-	}
-	dot.close();
+		if (!read_graphviz(dot, graph, dp, "id")) {
+			cerr << "FATAL: Could not parse a graphviz graph from " << argv[1] << endl;
+			return 2;
+		}
+		dot.close();
 	} catch (graph_exception& e) {
-		cerr << "FATAL: The graph in " << dot << " could not be parsed: " << e.what() << endl;
+		cerr << "FATAL: The graph in " << argv[1] << " could not be parsed: " << e.what() << endl;
 	        return 2;
 	}
 
