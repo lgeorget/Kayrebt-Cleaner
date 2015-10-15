@@ -18,17 +18,23 @@ namespace kayrebt
 		unsigned int id;
 		std::string label;
 		std::string shape;
+		int type;
+		unsigned int line;
 		std::string url;
 	};
 	struct Edge {
 		std::string condition;
+	};
+	struct GraphAttr {
+		std::string file;
+		unsigned int line;
 	};
 
 	/**
 	 * Underlying type of Boost graph used for representation
 	 * and manipulation of activity diagrams
 	 */
-	typedef boost::adjacency_list<boost::listS,boost::setS,boost::bidirectionalS,Node,Edge> GraphType;
+	typedef boost::adjacency_list<boost::listS,boost::setS,boost::bidirectionalS,Node,Edge,GraphAttr> GraphType;
 	/**
 	 * Underlying type of Boost vertex descriptor for manipulation
 	 * of the nodes in the activity diagrams

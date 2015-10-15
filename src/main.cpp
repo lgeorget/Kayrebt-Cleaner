@@ -6,6 +6,7 @@
 #include <bcg_user.h>
 
 #include "types.h"
+#include "graphtoBCGtranslator.h"
 
 using namespace std;
 using namespace boost;
@@ -36,9 +37,15 @@ int main(int argc, char** argv)
 	dynamic_properties dp;
 	dp.property("id",    get(&kayrebt::Node::id, graph));
 	dp.property("label", get(&kayrebt::Node::label, graph));
+	dp.property("type",  get(&kayrebt::Node::type, graph));
+	dp.property("line",  get(&kayrebt::Node::line, graph));
 	dp.property("label", get(&kayrebt::Edge::condition, graph));
 	dp.property("shape", get(&kayrebt::Node::shape, graph));
 	dp.property("URL",   get(&kayrebt::Node::url, graph));
+	ref_property_map<kayrebt::GraphType*,std::string> gfile(get_property(graph,&kayrebt::GraphAttr::file));
+	dp.property("file",  gfile);
+	ref_property_map<kayrebt::GraphType*,unsigned int> gline(get_property(graph,&kayrebt::GraphAttr::line));
+	dp.property("line",  gline);
 
 	std::ifstream dot(argv[1]);
 	try {
@@ -57,7 +64,7 @@ int main(int argc, char** argv)
 	char * filename = new char[file.size() + 5]; //make room for '.bcg\0'
 	kayrebt::build_BCG_file_name(file,filename);
 	BCG_IO_WRITE_BCG_BEGIN(filename, 0, 2, kayrebt::tool, BCG_FALSE);
-
+	(kayrebt::GraphToBCGTranslator(graph))();
 	BCG_IO_WRITE_BCG_END();
 	delete[] filename;
 	return 0;

@@ -24,13 +24,15 @@ namespace kayrebt
 		NodeIterator vi, vi_end;
 		bool found;
 		for (tie(vi, vi_end) = vertices(_graph); vi != vi_end && !found; ++vi) {
-			if (_graph[*vi].label == "INIT")
+			if (_graph[*vi].label == "INIT") {
 				found = true;
+				cerr << "Found INIT node : " << _graph[*vi].id << endl;
+			}
 		}
 		return found ? *vi : NO_NODE;
 	}
 
-	GraphToBCGTranslator::GraphToBCGTranslator(GraphType&& graph, std::string& bcgFile) : _graph(graph), _bcgFile(bcgFile)
+	GraphToBCGTranslator::GraphToBCGTranslator(const GraphType& graph) : _graph(graph)
 	{
 		NodeDescriptor initNode = findInitNode();
 		if (initNode == NO_NODE) { //this is not good!
@@ -39,7 +41,6 @@ namespace kayrebt
 		} else {
 			_nonVisited.push_back(make_pair(initNode,_index++));
 		}
-
 	}
 
 	void GraphToBCGTranslator::operator()()
@@ -54,6 +55,7 @@ namespace kayrebt
 
 			auto its = out_edges(node,_graph);
 			for (auto it = its.first ; it != its.second ; ++it) {
+				cerr << "Exploring edge " << _graph[source(*it,_graph)].label << " -> " << _graph[target(*it,_graph)].label << endl;
 				NodeDescriptor exitNode = target(*it,_graph);
 				auto foundNode = _visited.find(exitNode);
 				if (foundNode == _visited.cend()) {

@@ -16,14 +16,13 @@ class GraphToBCGTranslator
     private:
         std::map<NodeDescriptor,BCG_TYPE_STATE_NUMBER> _visited;
         std::list<std::pair<NodeDescriptor,BCG_TYPE_STATE_NUMBER>> _nonVisited;
-        GraphType _graph;
-	std::string _bcgFile;
+        const GraphType& _graph;
 	unsigned int _index = 0;
 
 	NodeDescriptor findInitNode();
 
     public:
-	GraphToBCGTranslator(GraphType&& graph, std::string& bcgFile);
+	GraphToBCGTranslator(const GraphType& graph);
 	void operator()();
 };
 
