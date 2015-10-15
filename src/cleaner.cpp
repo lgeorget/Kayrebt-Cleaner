@@ -1,3 +1,9 @@
+/**
+ * \file cleaner.cpp
+ * \author Laurent Georget
+ * \date 2015-10-15
+ * \brief
+ */
 #include <iostream>
 #include <boost/graph/graphviz.hpp>
 #include <boost/property_map/dynamic_property_map.hpp>
@@ -11,10 +17,22 @@
 using namespace std;
 using namespace boost;
 
+/**
+ * \brief 
+ */
 namespace kayrebt {
 
+	/**
+	 * \brief 
+	 */
 static char tool[] = "created by Kayrebt::Cleaner";
 
+/**
+ * \brief 
+ *
+ * \param file
+ * \param newfilename
+ */
 static void build_BCG_file_name(const std::string& file, char* newfilename)
 {
 	strncpy(newfilename,file.c_str(),file.length());
@@ -26,6 +44,14 @@ static void build_BCG_file_name(const std::string& file, char* newfilename)
 
 }
 
+/**
+ * \brief 
+ *
+ * \param argc
+ * \param argv
+ *
+ * \return 
+ */
 int main(int argc, char** argv)
 {
 	if (argc < 2) {
