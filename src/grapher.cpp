@@ -57,7 +57,7 @@ static std::string build_DOT_file_name(const char* newfilename)
 int main(int argc, char** argv)
 {
 	if (argc < 2) {
-		cerr << "Usage: " << argv[0] << " <file.dot>" << endl;
+		cerr << "Usage: " << argv[0] << " <file.bcg>" << endl;
 		return 1;
 	}
 
@@ -68,19 +68,19 @@ int main(int argc, char** argv)
 	dp.property("label", get(&kayrebt::Node::label, graph));
 	dp.property("label", get(&kayrebt::Edge::condition, graph));
 
-	std::string file(argv[1]);
-	char * filename = new char[file.size() + 5]; //make room for the .bcg extension
+	char * filename = new char[strlen(argv[1]) + 5]; //make room for the .bcg extension
+	strncpy(filename,argv[1],strlen(argv[1]));
 
-	std::ofstream dot(kayrebt::build_DOT_file_name(filename));
+	std::string dotFile(kayrebt::build_DOT_file_name(filename));
+	std::ofstream dot(dotFile);
 	//exception not caught, nothing else than crashing is needed
+	cerr << "Will read graph from " << filename << " and write to " << dotFile << endl;
 
 	BCG_TYPE_OBJECT_TRANSITION bcg;
 	BCG_INIT();
 	BCG_OT_READ_BCG_BEGIN(filename,&bcg,0);
-	//BCG_LOOP
+	(kayrebt::BCGToGraphTranslator(graph,bcg))();
 	BCG_OT_READ_BCG_END(&bcg);
-
-	//(kayrebt::BCGToGraphTranslator(graph))();
 	write_graphviz_dp(dot,graph,dp,"id");
 	delete[] filename;
 	return 0;
