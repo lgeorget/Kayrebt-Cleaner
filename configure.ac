@@ -17,8 +17,11 @@ if test -z "$DOXYGEN";
 fi
 AM_CONDITIONAL([HAVE_DOXYGEN],[test -n "$DOXYGEN"])
 AM_COND_IF([HAVE_DOXYGEN], [AC_CONFIG_FILES([Doxyfile])])
-LT_INIT([disable-shared])
-AC_MSG_WARN([CADP wants '-all-static', sorry :/])
+AC_CHECK_PROGS([DOT], [dot])
+AM_CONDITIONAL([HAVE_DOT],[test -n "$DOT"])
+AM_COND_IF([HAVE_DOT], [AC_SUBST(DOT_IS_AVAILABLE,["YES"])],
+                       [AC_SUBST(DOT_IS_AVAILABLE,["NO"])])
+LT_INIT
 
 # Checks for libraries.
 PKG_CHECK_MODULES([LIBCGRAPH],[libcgraph])
@@ -33,7 +36,7 @@ AC_COMPILE_IFELSE(
    ])],
    [
      old_libs=$LIBS
-     LIBS="$LIBS -static -L${with_cadp}/bin.`${with_cadp}/com/arch` -lBCG_IO -lBCG"
+     LIBS="$LIBS -L${with_cadp}/bin.`${with_cadp}/com/arch` -lBCG_IO -lBCG"
      AC_LINK_IFELSE(
      [AC_LANG_SOURCE([
       #include <$with_cadp/incl/bcg_user.h>
@@ -44,7 +47,6 @@ AC_COMPILE_IFELSE(
      [
       AC_SUBST([CADP_BCG_CPPFLAGS],["-I${with_cadp}/incl"])
       AC_SUBST([CADP_BCG_LIBS],["-L${with_cadp}/bin.`${with_cadp}/com/arch` -lBCG_IO -lBCG"])
-      AC_SUBST([CADP_BCG_LDFLAGS],["-all-static"])
       USE_BCG=yes
       LIBS=$old_libs
       ],
@@ -63,8 +65,8 @@ AC_MSG_RESULT($USE_BCG)
 AC_CHECK_LIB([m],[cos])
 AX_PTHREAD
 BOOST_REQUIRE([1.52])
-BOOST_GRAPH([s])
-BOOST_REGEX([s])
+BOOST_GRAPH
+BOOST_REGEX
 
 AC_CONFIG_FILES([Makefile src/Makefile])
 AC_OUTPUT
