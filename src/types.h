@@ -34,17 +34,22 @@ namespace kayrebt
 	 * Underlying type of Boost graph used for representation
 	 * and manipulation of activity diagrams
 	 */
-	typedef boost::adjacency_list<boost::listS,boost::setS,boost::bidirectionalS,Node,Edge,GraphAttr> GraphType;
+	using GraphType = boost::adjacency_list<boost::listS,boost::setS,boost::bidirectionalS,Node,Edge,GraphAttr>;
 	/**
 	 * Underlying type of Boost vertex descriptor for manipulation
 	 * of the nodes in the activity diagrams
 	 */
-	typedef boost::graph_traits<GraphType>::vertex_descriptor NodeDescriptor;
+	using NodeDescriptor = boost::graph_traits<GraphType>::vertex_descriptor;
 	/**
 	 * Underlying type of Boost vertex iterator for use in Boost algorithms
 	 * on the nodes in the activity diagrams
 	 */
-	typedef boost::graph_traits<GraphType>::vertex_iterator NodeIterator;
+	using NodeIterator = boost::graph_traits<GraphType>::vertex_iterator;
+	/**
+	 * Type of Boost iterators for "inverse adjacent vertices", i.e.
+	 * predecessors, of a given vertex
+	 */
+	using PredecessorIterator = boost::inv_adjacency_iterator_generator<GraphType,NodeDescriptor,boost::graph_traits<GraphType>::in_edge_iterator>::type;
 
 	extern const NodeDescriptor NO_NODE;
 }

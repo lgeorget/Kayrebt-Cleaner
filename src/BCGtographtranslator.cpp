@@ -34,38 +34,26 @@ namespace kayrebt
 
 		BCG_OT_ITERATE_PLN(_bcg, bcgSource, bcgEdge, bcgTarget)
 		{
-			NodeDescriptor newNode = add_vertex(_graph);
-			_graph[newNode].label = BCG_OT_LABEL_STRING(_bcg,bcgEdge);
-			_graph[newNode].id = _index++;
-			_succs[bcgSource].push_back(newNode);
-			_targets[newNode] = bcgTarget;
+			auto nodeIt = _nodes.find(bcgTarget);
+			if (nodeIt == _nodes.cend())
+				nodeIt = _nodes.emplace(bcgTarget,add_vertex(_graph)).first;
+			auto node = nodeIt->second;
+			_graph[node].id = bcgTarget;
+			std::string lab(BCG_OT_LABEL_STRING(_bcg,bcgEdge));
+			if (lab == "i")
+				_graph[node].shape = "diamond";
+			else
+				_graph[node].label = std::move(lab);
+
+
+			if (bcgSource != BCG_OT_INITIAL_STATE(_bcg)) {
+				auto predIt = _nodes.find(bcgSource);
+				if (predIt == _nodes.cend())
+					predIt = _nodes.emplace(bcgSource,add_vertex(_graph)).first;
+				auto pred = predIt->second;
+				add_edge(pred,node,_graph);
+			}
 		} BCG_OT_END_ITERATE;
-
-		NodeIterator vi, vi_end;
-		// Let's build all edges we have discovered
-		for (tie(vi, vi_end) = vertices(_graph); vi != vi_end ; ++vi) {
-			auto maybeDot = _targets.find(*vi);
-			if (maybeDot == _targets.end())
-				continue;
-			for (NodeDescriptor n : _succs[maybeDot->second])
-				add_edge(*vi,n,_graph);
-		}
-
-		// Next, we have to reenforce the invariant:
-		// 1 entry node per activity diagram
-		// 1 exit node per activity diagram
-		NodeDescriptor init = add_vertex(_graph);
-		_graph[init].id = _index++;
-		_graph[init].label = "INIT";
-		NodeDescriptor end = add_vertex(_graph);
-		_graph[end].id = _index++;
-		_graph[end].label = "END";
-		for (tie(vi, vi_end) = vertices(_graph); vi != vi_end ; ++vi) {
-			if (in_degree(*vi,_graph) == 0 && *vi != init) //init nodes
-				add_edge(init,*vi,_graph);
-			if (out_degree(*vi,_graph) == 0 && *vi != end) //ending nodes
-				add_edge(*vi,end,_graph);
-		}
 	}
 
 }

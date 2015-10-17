@@ -66,6 +66,7 @@ int main(int argc, char** argv)
 	dynamic_properties dp;
 	dp.property("id",    get(&kayrebt::Node::id, graph));
 	dp.property("label", get(&kayrebt::Node::label, graph));
+	dp.property("shape", get(&kayrebt::Node::shape, graph));
 	dp.property("label", get(&kayrebt::Edge::condition, graph));
 
 	char * filename = new char[strlen(argv[1]) + 5]; //make room for the .bcg extension

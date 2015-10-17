@@ -9,8 +9,6 @@
 
 #include <string>
 #include <map>
-#include <list>
-#include <utility>
 #include <bcg_user.h>
 
 #include "types.h"
@@ -22,32 +20,31 @@ namespace kayrebt {
  */
 class GraphToBCGTranslator
 {
-    private:
+private:
 	/**
 	 * \brief 
 	 */
-        std::map<NodeDescriptor,BCG_TYPE_STATE_NUMBER> _visited;
+    std::map<NodeDescriptor,BCG_TYPE_STATE_NUMBER> _states;
 	/**
 	 * \brief 
 	 */
-        std::list<std::pair<NodeDescriptor,BCG_TYPE_STATE_NUMBER>> _nonVisited;
+    const GraphType& _graph;
+	NodeDescriptor _initNode = GraphType::null_vertex();
 	/**
 	 * \brief 
 	 */
-        const GraphType& _graph;
-	/**
-	 * \brief 
-	 */
-	unsigned int _index = 0;
+	unsigned int _index = 1;
 
-	/**
-	 * \brief 
-	 *
-	 * \return 
-	 */
-	NodeDescriptor findInitNode();
+    inline void writeEdge(BCG_TYPE_STATE_NUMBER s, std::string l, BCG_TYPE_STATE_NUMBER t) {
+        BCG_IO_WRITE_BCG_EDGE(s,const_cast<char*>(l.c_str()),t);
+    }
 
-    public:
+    inline void writeEdge(BCG_TYPE_STATE_NUMBER s, const char* l, BCG_TYPE_STATE_NUMBER t) {
+        BCG_IO_WRITE_BCG_EDGE(s,const_cast<char*>(l),t);
+    }
+
+
+public:
 	/**
 	 * \brief 
 	 *
@@ -58,6 +55,7 @@ class GraphToBCGTranslator
 	 * \brief 
 	 */
 	void operator()();
+
 };
 
 }

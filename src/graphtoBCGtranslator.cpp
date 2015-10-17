@@ -23,59 +23,34 @@ using namespace std;
 
 namespace kayrebt
 {
-	const NodeDescriptor NO_NODE = graph_traits<GraphType>::null_vertex();
-
-	NodeDescriptor GraphToBCGTranslator::findInitNode()
-	{
-		NodeIterator vi, vi_end;
-		NodeDescriptor init = NO_NODE;
-		for (tie(vi, vi_end) = vertices(_graph); vi != vi_end && init == NO_NODE; ++vi) {
-			if (_graph[*vi].label == "INIT") {
-				init = *vi;
-				cerr << "Found INIT node : " << _graph[*vi].id << endl;
-			}
-		}
-		return init;
-	}
-
 	GraphToBCGTranslator::GraphToBCGTranslator(const GraphType& graph) : _graph(graph)
 	{
-		NodeDescriptor initNode = findInitNode();
-		if (initNode == NO_NODE) { //this is not good!
-			cerr << "WARNING: there is no node labelled \"INIT\" in"
-				"the graph. The algorithm cannot run." << endl;
-		} else {
-			_nonVisited.push_back(make_pair(initNode,_index++));
-		}
 	}
 
 	void GraphToBCGTranslator::operator()()
 	{
-		while (!_nonVisited.empty()) {
-			NodeDescriptor node;
-			BCG_TYPE_STATE_NUMBER dot;
-			auto pDotNode = _nonVisited.front();
-			_nonVisited.pop_front();
-			_visited.insert(pDotNode);
-			tie(node,dot) = pDotNode;
+		NodeIterator vi,vi_end;
+		for (tie(vi,vi_end) = vertices(_graph) ; vi != vi_end ; ++vi)
+		{
+			auto state = _states.find(*vi);
+			if (state == _states.cend())
+				state = _states.emplace(*vi,_index++).first;
+			PredecessorIterator pred,pred_end;
+			for (tie(pred,pred_end) = inv_adjacent_vertices(*vi,_graph) ; pred != pred_end ; ++pred)
+			{
+				auto predState = _states.find(*pred);
+				if (predState == _states.cend())
+					predState = _states.emplace(*pred,_index++).first;
+				if (_graph[*vi].label.empty())
+					writeEdge(predState->second,"i",state->second);
+				else
+					writeEdge(predState->second,_graph[*vi].label,state->second);
+			}
 
-			auto its = out_edges(node,_graph);
-			for (auto it = its.first ; it != its.second ; ++it) {
-				cerr << "Exploring edge \"" << _graph[source(*it,_graph)].label << "\" -> \"" << _graph[target(*it,_graph)].label << "\"" << endl;
-				NodeDescriptor exitNode = target(*it,_graph);
-				auto foundNode = _visited.find(exitNode);
-				if (foundNode == _visited.cend()) {
-					BCG_TYPE_STATE_NUMBER state = _index++;
-					foundNode = _visited.emplace(exitNode,state).first;
-					_nonVisited.emplace_back(exitNode,state);
-				}
-				BCG_IO_WRITE_BCG_EDGE(dot,const_cast<char*>(_graph[node].label.c_str()),foundNode->second);
-			}
-			if (its.first == its.second) { //for last node
-				BCG_TYPE_STATE_NUMBER state = _index++;
-				BCG_IO_WRITE_BCG_EDGE(dot,const_cast<char*>(_graph[node].label.c_str()),state);
-			}
+			if (in_degree(*vi,_graph) == 0)
+				_initNode = *vi; //should better be unique!
 		}
-	}
+		writeEdge(0, _graph[_initNode].label, _states[_initNode]);
 
+	}
 }
