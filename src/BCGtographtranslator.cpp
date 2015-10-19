@@ -40,10 +40,13 @@ namespace kayrebt
 			auto node = nodeIt->second;
 			_graph[node].id = bcgTarget;
 			std::string lab(BCG_OT_LABEL_STRING(_bcg,bcgEdge));
-			if (lab == "i")
+			if (lab == "i") {
 				_graph[node].shape = "diamond";
-			else
+				_graph[node].label = std::string();
+			} else {
+				_graph[node].shape = "ellipse";
 				_graph[node].label = std::move(lab);
+			}
 
 
 			if (bcgSource != BCG_OT_INITIAL_STATE(_bcg)) {
