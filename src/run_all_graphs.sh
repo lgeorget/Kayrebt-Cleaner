@@ -17,8 +17,8 @@ if [[ $# -ge 1 ]]
 then
 	transformations="$@"
 else
-	transformations=("taustar" "tauconfluence" "taudivergence" "strong"\
-	                 "safety"  "trace"         "weaktrace")
+	transformations=("taustar" "tauconfluence"  "taudivergence" "strong"\
+	                 "safety"  "taucompression" "weaktrace"     "trace")
 fi
 
 ./cleaner $dotfile
