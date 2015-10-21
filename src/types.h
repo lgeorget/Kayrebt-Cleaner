@@ -18,9 +18,10 @@ namespace kayrebt
 		unsigned int id;
 		std::string label;
 		std::string shape;
-		int type;
+		std::string type;
 		unsigned int line;
 		std::string url;
+
 	};
 	struct Edge {
 		std::string condition;
