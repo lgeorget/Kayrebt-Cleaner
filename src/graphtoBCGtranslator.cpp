@@ -47,7 +47,7 @@ namespace kayrebt
 				     _graph[*vi].type != "end_of_activity")) {
 					writeEdge(predState->second,"i",state->second);
 				} else {
-					std::string label = std::to_string(_graph[*vi].id) + " !\"" + _graph[*vi].label + "\"";
+					std::string label = std::to_string(get(vertex_index,_graph)[*vi]) + " !\"" + _graph[*vi].label + "\"";
 					writeEdge(predState->second,label,state->second);
 				}
 			}
@@ -55,7 +55,7 @@ namespace kayrebt
 			if (in_degree(*vi,_graph) == 0)
 				_initNode = *vi; //should better be unique!
 		}
-		std::string label = std::to_string(_graph[_initNode].id) + " !\"" + _graph[_initNode].label + "\"";
+		std::string label = std::to_string(get(vertex_index,_graph)[_initNode]) + " !\"" + _graph[_initNode].label + "\"";
 		writeEdge(0, label, _states[_initNode]);
 
 	}

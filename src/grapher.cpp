@@ -64,6 +64,7 @@ int main(int argc, char** argv)
 	kayrebt::GraphType graph;
 
 	dynamic_properties dp;
+	dp.property("node_id", get(vertex_index, graph));
 	dp.property("label", get(&kayrebt::Node::label, graph));
 	dp.property("shape", get(&kayrebt::Node::shape, graph));
 	dp.property("label", get(&kayrebt::Edge::condition, graph));
