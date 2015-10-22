@@ -35,7 +35,7 @@ namespace kayrebt
 	 * Underlying type of Boost graph used for representation
 	 * and manipulation of activity diagrams
 	 */
-	using GraphType = boost::adjacency_list<boost::listS,boost::setS,boost::bidirectionalS,Node,Edge,GraphAttr>;
+	using GraphType = boost::adjacency_list<boost::setS,boost::vecS,boost::bidirectionalS,Node,Edge,GraphAttr>;
 	/**
 	 * Underlying type of Boost vertex descriptor for manipulation
 	 * of the nodes in the activity diagrams

@@ -62,7 +62,7 @@ int main(int argc, char** argv)
 	kayrebt::GraphType graph;
 
 	dynamic_properties dp;
-	dp.property("id",    get(&kayrebt::Node::id, graph));
+	dp.property("node_id",    get(&kayrebt::Node::id, graph));
 	dp.property("label", get(&kayrebt::Node::label, graph));
 	dp.property("type",  get(&kayrebt::Node::type, graph));
 	dp.property("line",  get(&kayrebt::Node::line, graph));
@@ -76,7 +76,7 @@ int main(int argc, char** argv)
 
 	std::ifstream dot(argv[1]);
 	try {
-		if (!read_graphviz(dot, graph, dp, "id")) {
+		if (!read_graphviz(dot, graph, dp)) {
 			cerr << "FATAL: Could not parse a graphviz graph from " << argv[1] << endl;
 			return 2;
 		}

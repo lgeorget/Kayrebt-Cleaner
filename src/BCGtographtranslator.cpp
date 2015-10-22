@@ -40,7 +40,6 @@ namespace kayrebt
 			NodeDescriptor node;
 			if (lab == "i") {
 				node = add_vertex(_graph);
-				_graph[node].id = index++;
 				_graph[node].shape = "diamond";
 				_graph[node].label = std::string();
 			} else {
@@ -51,7 +50,6 @@ namespace kayrebt
 					auto it = _nodes.find(index);
 					if (it == _nodes.cend()) {
 						node = _nodes.insert(std::make_pair(index,add_vertex(_graph))).first->second;
-						_graph[node].id = index++;
 						_graph[node].shape = "ellipse";
 						_graph[node].label = std::move(pieces.str(2));
 					} else {
@@ -60,7 +58,6 @@ namespace kayrebt
 				} else {
 					std::cerr << "Unmatched label !\n\t" << lab << std::endl;
 					node = add_vertex(_graph);
-					_graph[node].id = index++;
 					_graph[node].shape = "ellipse";
 					_graph[node].label = std::move(lab);
 				}

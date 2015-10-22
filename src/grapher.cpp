@@ -64,7 +64,6 @@ int main(int argc, char** argv)
 	kayrebt::GraphType graph;
 
 	dynamic_properties dp;
-	dp.property("id",    get(&kayrebt::Node::id, graph));
 	dp.property("label", get(&kayrebt::Node::label, graph));
 	dp.property("shape", get(&kayrebt::Node::shape, graph));
 	dp.property("label", get(&kayrebt::Edge::condition, graph));
@@ -82,7 +81,7 @@ int main(int argc, char** argv)
 	BCG_OT_READ_BCG_BEGIN(filename,&bcg,0);
 	(kayrebt::BCGToGraphTranslator(graph,bcg))();
 	BCG_OT_READ_BCG_END(&bcg);
-	write_graphviz_dp(dot,graph,dp,"id");
+	write_graphviz_dp(dot,graph,dp);
 	delete[] filename;
 	return 0;
 }
