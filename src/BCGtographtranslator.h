@@ -9,6 +9,8 @@
 
 #include <string>
 #include <map>
+#include <vector>
+#include <utility>
 #include <bcg_user.h>
 
 #include "types.h"
@@ -27,7 +29,8 @@ class BCGToGraphTranslator
         GraphType& _graph;
         const BCG_TYPE_OBJECT_TRANSITION& _bcg;
 	unsigned int _index = 0;
-	std::map<BCG_TYPE_STATE_NUMBER,NodeDescriptor> _nodes;
+	std::vector<std::pair<BCG_TYPE_STATE_NUMBER,NodeDescriptor>> _targets;
+	std::map<BCG_TYPE_STATE_NUMBER,std::vector<NodeDescriptor>> _sources;
 
     public:
 	/**

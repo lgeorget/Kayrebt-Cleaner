@@ -32,14 +32,12 @@ namespace kayrebt
 		BCG_TYPE_LABEL_NUMBER bcgEdge;
 		BCG_TYPE_STATE_NUMBER bcgTarget;
 
+		unsigned int index = 0;
 		BCG_OT_ITERATE_PLN(_bcg, bcgSource, bcgEdge, bcgTarget)
 		{
-			auto nodeIt = _nodes.find(bcgTarget);
-			if (nodeIt == _nodes.cend())
-				nodeIt = _nodes.emplace(bcgTarget,add_vertex(_graph)).first;
-			auto node = nodeIt->second;
-			_graph[node].id = bcgTarget;
 			std::string lab(BCG_OT_LABEL_STRING(_bcg,bcgEdge));
+			auto node = add_vertex(_graph);
+			_graph[node].id = index++;
 			if (lab == "i") {
 				_graph[node].shape = "diamond";
 				_graph[node].label = std::string();
@@ -48,15 +46,13 @@ namespace kayrebt
 				_graph[node].label = std::move(lab);
 			}
 
-
-			if (bcgSource != BCG_OT_INITIAL_STATE(_bcg)) {
-				auto predIt = _nodes.find(bcgSource);
-				if (predIt == _nodes.cend())
-					predIt = _nodes.emplace(bcgSource,add_vertex(_graph)).first;
-				auto pred = predIt->second;
-				add_edge(pred,node,_graph);
-			}
+			_targets.emplace_back(bcgSource,node);
+			_sources[bcgTarget].push_back(node);
 		} BCG_OT_END_ITERATE;
+
+		for (const auto& targetpair : _targets)
+			for (const auto& nodesource : _sources[targetpair.first])
+				add_edge(nodesource,targetpair.second,_graph);
 	}
 
 }

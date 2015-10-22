@@ -41,7 +41,10 @@ namespace kayrebt
 				auto predState = _states.find(*pred);
 				if (predState == _states.cend())
 					predState = _states.emplace(*pred,_index++).first;
-				if (_graph[*vi].label.empty())
+				if (_graph[*vi].label.empty() ||
+				    (_graph[*vi].type != "call" &&
+				     _graph[*vi].type != "init" &&
+				     _graph[*vi].type != "end_of_activity"))
 					writeEdge(predState->second,"i",state->second);
 				else
 					writeEdge(predState->second,_graph[*vi].label,state->second);
