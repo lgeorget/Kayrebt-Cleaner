@@ -44,16 +44,19 @@ namespace kayrebt
 				if (_graph[*vi].label.empty() ||
 				    (_graph[*vi].type != "call" &&
 				     _graph[*vi].type != "init" &&
-				     _graph[*vi].type != "end_of_activity"))
+				     _graph[*vi].type != "end_of_activity")) {
 					writeEdge(predState->second,"i",state->second);
-				else
-					writeEdge(predState->second,_graph[*vi].label,state->second);
+				} else {
+					std::string label = std::to_string(_graph[*vi].id) + " !\"" + _graph[*vi].label + "\"";
+					writeEdge(predState->second,label,state->second);
+				}
 			}
 
 			if (in_degree(*vi,_graph) == 0)
 				_initNode = *vi; //should better be unique!
 		}
-		writeEdge(0, _graph[_initNode].label, _states[_initNode]);
+		std::string label = std::to_string(_graph[_initNode].id) + " !\"" + _graph[_initNode].label + "\"";
+		writeEdge(0, label, _states[_initNode]);
 
 	}
 }

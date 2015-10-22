@@ -87,7 +87,6 @@ int main(int argc, char** argv)
 	}
 
 	BCG_INIT();
-	BCG_IO_WRITE_BCG_PARSING(BCG_UNPARSED_DATA_FORMAT);
 	std::string file(argv[1]);
 	char * filename = new char[file.size() + 5]; //make room for '.bcg\0'
 	kayrebt::build_BCG_file_name(file,filename);

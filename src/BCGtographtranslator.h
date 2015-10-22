@@ -8,7 +8,7 @@
 #define BCG_TO_GRAPH_TRANSLATOR
 
 #include <string>
-#include <map>
+#include <unordered_map>
 #include <vector>
 #include <utility>
 #include <bcg_user.h>
@@ -30,7 +30,8 @@ class BCGToGraphTranslator
         const BCG_TYPE_OBJECT_TRANSITION& _bcg;
 	unsigned int _index = 0;
 	std::vector<std::pair<BCG_TYPE_STATE_NUMBER,NodeDescriptor>> _targets;
-	std::map<BCG_TYPE_STATE_NUMBER,std::vector<NodeDescriptor>> _sources;
+	std::unordered_map<BCG_TYPE_STATE_NUMBER,std::vector<NodeDescriptor>> _sources;
+	std::unordered_map<unsigned int, NodeDescriptor> _nodes;
 
     public:
 	/**

@@ -12,6 +12,7 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <regex>
 #include <bcg_user.h>
 
 #include "BCGtographtranslator.h"
@@ -36,14 +37,33 @@ namespace kayrebt
 		BCG_OT_ITERATE_PLN(_bcg, bcgSource, bcgEdge, bcgTarget)
 		{
 			std::string lab(BCG_OT_LABEL_STRING(_bcg,bcgEdge));
-			auto node = add_vertex(_graph);
-			_graph[node].id = index++;
+			NodeDescriptor node;
 			if (lab == "i") {
+				node = add_vertex(_graph);
+				_graph[node].id = index++;
 				_graph[node].shape = "diamond";
 				_graph[node].label = std::string();
 			} else {
-				_graph[node].shape = "ellipse";
-				_graph[node].label = std::move(lab);
+				std::regex labelRegex(R"#((\d+) !"([^\"]*)")#");
+				std::smatch pieces;
+				if (std::regex_match(lab,pieces,labelRegex)) {
+					unsigned int index = std::stoul(pieces.str(1));
+					auto it = _nodes.find(index);
+					if (it == _nodes.cend()) {
+						node = _nodes.insert(std::make_pair(index,add_vertex(_graph))).first->second;
+						_graph[node].id = index++;
+						_graph[node].shape = "ellipse";
+						_graph[node].label = std::move(pieces.str(2));
+					} else {
+						node = it->second;
+					}
+				} else {
+					std::cerr << "Unmatched label !\n\t" << lab << std::endl;
+					node = add_vertex(_graph);
+					_graph[node].id = index++;
+					_graph[node].shape = "ellipse";
+					_graph[node].label = std::move(lab);
+				}
 			}
 
 			_targets.emplace_back(bcgSource,node);
