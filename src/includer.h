@@ -11,37 +11,15 @@
 
 #include <boost/graph/graph_utility.hpp>
 #include <boost/graph/copy.hpp>
-#include <boost/graph/filtered_graph.hpp>
 #include <boost/property_map/property_map.hpp>
 
 namespace boost
 {
-	template <typename NodeTypeMap>
-	struct NotInitNorEndNode {
-		NotInitNorEndNode() {}
-		NotInitNorEndNode(const NodeTypeMap* m) : _typeMap(m) {}
-		template<typename Vertex>
-		bool operator()(const Vertex& v) const {
-			return (*_typeMap)[v] != "INIT" && (*_typeMap)[v] != "END_OF_ACTIVITY";
-		}
-		const NodeTypeMap* _typeMap;
-	};
-	template <typename NodeTypeMap,typename Graph>
-	struct NotInitNorEndEdge {
-		NotInitNorEndEdge() {}
-		NotInitNorEndEdge(const NodeTypeMap* m, const Graph* g) : _typeMap(m), _g(g) {}
-		template<typename Edge>
-		bool operator()(const Edge& e) const {
-			return (*_typeMap)[source(e,_g)] != "INIT" && (*_typeMap)[target(e,_g)] != "END_OF_ACTIVITY";
-		}
-		const NodeTypeMap* _typeMap;
-		const Graph* _g;
-	};
-
 	template<typename Vertex, typename AddedGraph, typename InputGraph,
-		 typename NodeTypeMap, typename VertexIndexMap>
-	void expand_node(Vertex u, AddedGraph gadd, InputGraph gin,
-			NodeTypeMap nodeType, VertexIndexMap i_map) {
+		 typename VertexIndexMap, typename BeginPredicate, typename EndPredicate>
+	void expand_node(Vertex u, const AddedGraph& gadd, InputGraph& gin,
+			VertexIndexMap i_map,
+			BeginPredicate beginner, EndPredicate ender) {
 
 		using InputGraphTraits = graph_traits<InputGraph>;
 		using InputVertex = typename InputGraphTraits::vertex_descriptor;
@@ -52,35 +30,35 @@ namespace boost
 		BOOST_CONCEPT_ASSERT(( VertexListGraphConcept<AddedGraph> ));
 		BOOST_CONCEPT_ASSERT(( BidirectionalGraphConcept<InputGraph> ));
 		BOOST_CONCEPT_ASSERT(( MutableGraphConcept<InputGraph> ));
-		BOOST_CONCEPT_ASSERT(( ReadablePropertyMapConcept<NodeTypeMap,AddedVertex> ));
-		BOOST_STATIC_ASSERT(( is_same<typename property_traits<NodeTypeMap>::value_type,std::string>::value ));
 
 		std::vector<InputVertex> correspondence(num_vertices(gadd));
 		auto mapOldNewVertices = make_iterator_property_map(
-			correspondence.begin(),get(vertex_index,gadd));
+			correspondence.begin(),i_map);
 
-		using EdgePredicate = NotInitNorEndEdge<NodeTypeMap,AddedGraph>;
-		using NodePredicate = NotInitNorEndNode<NodeTypeMap>;
-		using FilteredAddedGraph = filtered_graph<AddedGraph,EdgePredicate,NodePredicate>;
-		FilteredAddedGraph filtered_gadd(gadd,EdgePredicate(&nodeType,&gadd),NodePredicate(&nodeType));
-
-		copy_graph(filtered_gadd, gin, orig_to_copy(mapOldNewVertices).
+		copy_graph(gadd, gin, orig_to_copy(mapOldNewVertices).
 				               vertex_index_map(i_map));
 
 		typename AddedGraphTraits::vertex_iterator v, vend;
-		typename AddedGraphTraits::adjacency_iterator ai, aend;
-		typename InputGraphTraits::inv_adjacency_iterator predi, predend;
-		typename InputGraphTraits::adjacency_iterator succi, succend;
+		typename InputGraphTraits::in_edge_iterator predi, predend;
+		typename InputGraphTraits::out_edge_iterator succi, succend;
 		for (boost::tie(v, vend) = vertices(gadd); v != vend; ++v) {
-			if (nodeType[*v] == "INIT") { //make edges from all predecessors of u in gin to all successors of INIT in gadd
-				for (boost::tie(predi, predend) = inv_adjacent_vertices(u,gin); predi != predend; ++predi)
-					for (boost::tie(ai, aend) = adjacent_vertices(*v,gadd); ai != aend; ++ai)
-						add_edge(*predi,mapOldNewVertices[*ai],gin);
-			} else {
-				for (boost::tie(ai, aend) = adjacent_vertices(*v,gadd); ai != aend; ++ai)
-					if (nodeType[*v] == "END_OF_ACTIVITY") //make edges from all predecessors of END in gadd to all successors of u in gin
-						for (boost::tie(succi, succend) = adjacent_vertices(u,gin); succi != succend; ++succi)
-							add_edge(mapOldNewVertices[*v],*succi);
+			if (beginner(*v)) { //make edges from all predecessors of u in gin to all entry nodes in gadd
+				for (boost::tie(predi, predend) = in_edges(u,gin); predi != predend; ++predi) {
+					std::cerr << "Adding an edge from " << gin[source(*predi,gin)].label << " and " << gin[mapOldNewVertices[*v]].label << std::endl;
+					auto maybe_edge = add_edge(source(*predi,gin),mapOldNewVertices[*v],gin);
+					auto properties = get(edge_all,gin,*predi);
+					if (maybe_edge.second)
+						put(edge_all,gin,maybe_edge.first,properties);
+				}
+			}
+			if (ender(*v)) {//make edges from all exit nodes in gadd to all successors of u in gin
+				for (boost::tie(succi, succend) = out_edges(u,gin); succi != succend; ++succi) {
+					std::cerr << "Adding an edge from " << gin[mapOldNewVertices[*v]].label << " and " << gin[target(*succi,gin)].label << std::endl;
+					auto maybe_edge = add_edge(mapOldNewVertices[*v],target(*succi,gin),gin);
+					auto properties = get(edge_all,gin,*succi);
+					if (maybe_edge.second)
+						put(edge_all,gin,maybe_edge.first,properties);
+				}
 			}
 		}
 
