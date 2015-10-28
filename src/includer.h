@@ -40,7 +40,22 @@ namespace boost
 		typename AddedGraphTraits::vertex_iterator v, vend;
 		typename InputGraphTraits::in_edge_iterator predi, predend;
 		typename InputGraphTraits::out_edge_iterator succi, succend;
-		for (boost::tie(v, vend) = vertices(gadd); v != vend; ++v) {
+		boost::tie(v, vend) = vertices(gadd);
+
+		//special case for empty graphs
+		if (v == vend) {
+			for (boost::tie(predi, predend) = in_edges(u,gin); predi != predend; ++predi) {
+				for (boost::tie(succi, succend) = out_edges(u,gin); succi != succend; ++succi) {
+					auto maybe_edge = add_edge(source(*predi,gin),target(*succi,gin),gin);
+					auto properties = get(edge_all,gin,*predi); //arbitrarily, we choose to keep the property from the in-edge
+					if (maybe_edge.second)
+						put(edge_all,gin,maybe_edge.first,properties);
+				}
+			}
+		}
+
+		// General case : non empty graph
+		for (; v != vend; ++v) {
 			if (beginner(*v)) { //make edges from all predecessors of u in gin to all entry nodes in gadd
 				for (boost::tie(predi, predend) = in_edges(u,gin); predi != predend; ++predi) {
 					auto maybe_edge = add_edge(source(*predi,gin),mapOldNewVertices[*v],gin);
