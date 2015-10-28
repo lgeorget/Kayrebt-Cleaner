@@ -153,9 +153,8 @@ int main(int argc, char** argv)
 	        return 2;
 	}
 
-	std::map<kayrebt::NodeDescriptor,kayrebt::NodeOutDescriptor> vertexMap;
-
-	auto inOutVertexMap = make_assoc_property_map(vertexMap);
+	std::vector<kayrebt::NodeOutDescriptor> vertexMap(num_vertices(graphin));
+	auto inOutVertexMap = make_iterator_property_map(vertexMap.begin(),get(vertex_index,graphin));
 	copy_graph(graphin,graphout,orig_to_copy(inOutVertexMap));
 
 	kayrebt::NodeIterator vi,vnew,vend;
@@ -203,7 +202,7 @@ int main(int argc, char** argv)
 				return result;
 			};
 
-			//We have to remap the node because filtering could
+			//We have to remap the nodes because filtering could
 			//have introduced 'holes' in the vertex_index map
 			std::map<kayrebt::NodeDescriptor,unsigned int> vertexAddIndexMap;
 			graph_traits<decltype(filtered_gadd)>::vertex_iterator vaddi,vaddend;
