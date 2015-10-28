@@ -31,9 +31,8 @@ namespace boost
 		BOOST_CONCEPT_ASSERT(( BidirectionalGraphConcept<InputGraph> ));
 		BOOST_CONCEPT_ASSERT(( MutableGraphConcept<InputGraph> ));
 
-		std::vector<InputVertex> correspondence(num_vertices(gadd));
-		auto mapOldNewVertices = make_iterator_property_map(
-			correspondence.begin(),i_map);
+		std::map<AddedVertex,InputVertex> correspondence;
+		auto mapOldNewVertices = make_assoc_property_map(correspondence);
 
 		copy_graph(gadd, gin, orig_to_copy(mapOldNewVertices).
 				               vertex_index_map(i_map));
@@ -44,7 +43,6 @@ namespace boost
 		for (boost::tie(v, vend) = vertices(gadd); v != vend; ++v) {
 			if (beginner(*v)) { //make edges from all predecessors of u in gin to all entry nodes in gadd
 				for (boost::tie(predi, predend) = in_edges(u,gin); predi != predend; ++predi) {
-					std::cerr << "Adding an edge from " << gin[source(*predi,gin)].label << " and " << gin[mapOldNewVertices[*v]].label << std::endl;
 					auto maybe_edge = add_edge(source(*predi,gin),mapOldNewVertices[*v],gin);
 					auto properties = get(edge_all,gin,*predi);
 					if (maybe_edge.second)
@@ -53,7 +51,6 @@ namespace boost
 			}
 			if (ender(*v)) {//make edges from all exit nodes in gadd to all successors of u in gin
 				for (boost::tie(succi, succend) = out_edges(u,gin); succi != succend; ++succi) {
-					std::cerr << "Adding an edge from " << gin[mapOldNewVertices[*v]].label << " and " << gin[target(*succi,gin)].label << std::endl;
 					auto maybe_edge = add_edge(mapOldNewVertices[*v],target(*succi,gin),gin);
 					auto properties = get(edge_all,gin,*succi);
 					if (maybe_edge.second)
