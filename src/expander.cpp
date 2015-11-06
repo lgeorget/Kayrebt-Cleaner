@@ -53,7 +53,5 @@ int main(int argc, char** argv)
 	auto result = decider.decide(inputGraph);
 	result.wait();
 
-	std::vector<std::string> exploredDiagrams(decider.getExploredDiagramsPath());
-	std::copy(exploredDiagrams.cbegin(),exploredDiagrams.cend(),
-		std::ostream_iterator<std::string>(std::cout, "\n"));
+	std::cout << decider;
 }
