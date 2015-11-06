@@ -22,7 +22,7 @@ private:
 		{std::regex("new_sync_read"),             Mark::FLOW_STMT},
 	};
 public:
-	Mark operator()(const std::string& symbol);
+	Mark operator()(const std::string& symbol) const;
 };
 
 class Decider {
@@ -33,7 +33,7 @@ private:
 	std::mutex _threadCounterLock;
 	int _threadCounter = 0;
 	std::condition_variable _threadFinished;
-	NodeMarker _deciderMarker;
+	const NodeMarker _deciderMarker;
 
 public:
 	Decider(std::string pathToDiagrams);
