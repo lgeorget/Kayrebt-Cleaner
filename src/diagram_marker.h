@@ -22,6 +22,7 @@ private:
 	std::string _thisDiagramPath;
 	std::string _thisDiagramRelDir;
 	std::string _thisDiagramRelPath;
+	const std::string& _outputDir;
 	kayrebt::GraphType _graph;
 	const NodeMarker& _nodeMarker;
 	Mark _mark = Mark::LAST_AND_UNUSED_MARK;
@@ -32,8 +33,8 @@ private:
 	std::map<kayrebt::NodeDescriptor, Mark> _actualMarks;
 
 public:
-	DiagramMarker(Decider& decider,
-		std::string diagram, std::string relPath,
+	DiagramMarker(Decider& decider, std::string diagram,
+		std::string relPath, const std::string& outputDir,
 		const NodeMarker& nodeMarker);
 	Mark getMark();
 	const std::string& getRelDir() const;

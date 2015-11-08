@@ -15,7 +15,8 @@ using namespace boost;
 void usage(const char* program, int exitCode)
 {
 	std::cerr << "Usage: "
-		  << program << " <diagrams directory> <path to main diagram>\n"
+		  << program << " <diagrams directory> <path to main diagram>"
+		                " <output directory root>\n"
 		  << "the <path to main diagram> is relative to "\
 		     "<diagrams directory>"
 		  << std::endl;
@@ -24,7 +25,7 @@ void usage(const char* program, int exitCode)
 
 int main(int argc, char** argv)
 {
-	if (argc < 3)
+	if (argc < 4)
 		usage(argv[0], 1);
 
 	std::string dir(argv[1]);
@@ -35,6 +36,7 @@ int main(int argc, char** argv)
 		inputGraph += ".dot";
 	std::string basepath(inputGraph);
 	basepath.erase(basepath.find_last_of('/') + 1);
+	std::string outputGraph(argv[3]);
 
 	if (access(dir.c_str(), R_OK | X_OK) != 0) {
 		std::cerr << "ERROR : dir \"" << dir << "\" does not exist"
@@ -48,7 +50,7 @@ int main(int argc, char** argv)
 		usage(argv[0], 3);
 	}
 
-	Decider decider(dir);
+	Decider decider(dir,outputGraph);
 	std::cerr << "Exploring " << inputGraph << std::endl;
 	auto result = decider.decide(inputGraph);
 	result.wait();

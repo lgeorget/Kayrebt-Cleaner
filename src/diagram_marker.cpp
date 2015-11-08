@@ -19,9 +19,10 @@
 #include "mark.h"
 
 DiagramMarker::DiagramMarker(Decider& decider, std::string diagram,
-	std::string relPath, const NodeMarker& nodeMarker) :
+	std::string relPath, const std::string& outputDir,
+	const NodeMarker& nodeMarker) :
 	_decider(decider), _thisDiagramPath(diagram), _thisDiagramRelPath(relPath),
-	_nodeMarker(nodeMarker),
+	_outputDir(outputDir), _nodeMarker(nodeMarker),
 	_dp(boost::ignore_other_properties)//,
 //	_gfile(get_property(_graph,&kayrebt::GraphAttr::file)),
 //	_gline(get_property(_graph,&kayrebt::GraphAttr::line))
@@ -113,8 +114,8 @@ void DiagramMarker::outputDiagram() {
 			_actualMarks[p.first] = p.second.get();
 	}
 
-	boost::filesystem::create_directories(_thisDiagramRelDir);
-	std::ofstream stream_graphout(_thisDiagramRelPath);
+	boost::filesystem::create_directories(_outputDir + "/" + _thisDiagramRelDir);
+	std::ofstream stream_graphout(_outputDir + "/" + _thisDiagramRelPath);
 	_dp.property("mark",
 			boost::make_assoc_property_map(_actualMarks));
 

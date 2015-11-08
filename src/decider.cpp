@@ -14,7 +14,8 @@
 #include "node_marker.h"
 #include "mark.h"
 
-Decider::Decider(std::string pathToDiagrams) : _pathToDiagrams(pathToDiagrams)
+Decider::Decider(std::string pathToDiagrams, std::string outputDir) :
+	_pathToDiagrams(pathToDiagrams), _outputDir(outputDir)
 {}
 
 std::shared_future<Mark> Decider::decide(std::string relPath)
@@ -38,6 +39,7 @@ std::shared_future<Mark> Decider::decide(std::string relPath)
 					std::unique_ptr<DiagramMarker> marker(
 						new DiagramMarker(*this,
 							newDiagram, relPath,
+							_outputDir,
 							_deciderMarker
 						));
 					Mark result = marker->getMark();

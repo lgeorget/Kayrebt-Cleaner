@@ -23,9 +23,10 @@ private:
 	std::condition_variable _threadFinished;
 	const NodeMarker _deciderMarker;
 	std::vector<std::unique_ptr<DiagramMarker>> _diagramPrinters;
+	std::string _outputDir;
 
 public:
-	Decider(std::string pathToDiagrams);
+	Decider(std::string pathToDiagrams, std::string outputDir);
 	std::shared_future<Mark> decide(std::string relPath);
 	void registerNewThread();
 	void unregisterThread();
