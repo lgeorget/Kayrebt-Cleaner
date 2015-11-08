@@ -7,23 +7,11 @@
 #include <future>
 #include <mutex>
 #include <regex>
+#include <memory>
 
+#include "node_marker.h"
 #include "mark.h"
 #include "diagram_marker.h"
-
-class NodeMarker {
-private:
-	const std::vector<std::pair<std::regex,Mark>> _matcher{
-		{std::regex("mutex.*"),                   Mark::LOCK},
-		{std::regex("spin.*lock"),                Mark::LOCK},
-		{std::regex("atomic_dec_and_lock.*lock"), Mark::LOCK},
-		{std::regex("security_.*"),               Mark::LSM_HOOK},
-		{std::regex("file->f_op->read"),          Mark::FLOW_STMT},
-		{std::regex("new_sync_read"),             Mark::FLOW_STMT},
-	};
-public:
-	Mark operator()(const std::string& symbol) const;
-};
 
 class Decider {
 private:
@@ -34,15 +22,14 @@ private:
 	int _threadCounter = 0;
 	std::condition_variable _threadFinished;
 	const NodeMarker _deciderMarker;
+	std::vector<std::unique_ptr<DiagramMarker>> _diagramPrinters;
 
 public:
 	Decider(std::string pathToDiagrams);
 	std::shared_future<Mark> decide(std::string relPath);
 	void registerNewThread();
 	void unregisterThread();
-
-	friend std::ostream& operator<<(std::ostream& out, Decider& d);
+	void outputAllDiagrams(std::ostream& out);
 };
 
-std::ostream& operator<<(std::ostream& out, Decider& d);
 #endif

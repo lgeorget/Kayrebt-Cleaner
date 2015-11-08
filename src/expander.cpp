@@ -53,5 +53,5 @@ int main(int argc, char** argv)
 	auto result = decider.decide(inputGraph);
 	result.wait();
 
-	std::cout << decider;
+	decider.outputAllDiagrams(std::cout);
 }

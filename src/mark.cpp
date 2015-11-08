@@ -26,3 +26,20 @@ std::ostream& operator<<(std::ostream& out, Mark m) {
 	return out;
 }
 
+std::istream& operator>>(std::istream& in, Mark& m) {
+    std::string buf;
+    in >> buf;
+    if (buf == "FLOW STATEMENT")
+        m = Mark::FLOW_STMT;
+    else if (buf == "LOCK")
+        m = Mark::LOCK;
+    else if (buf == "CALL")
+        m = Mark::CALL;
+    else if (buf == "DISCARDABLE")
+        m = Mark::DISCARDABLE;
+    else if (buf == "LSM_HOOK")
+        m = Mark::LSM_HOOK;
+    else
+        m = Mark::LAST_AND_UNUSED_MARK;
+	return in;
+}

@@ -13,5 +13,6 @@ enum class Mark {
 };
 
 std::ostream& operator<<(std::ostream& out, Mark m);
+std::istream& operator>>(std::istream& in, Mark& m);
 
 #endif

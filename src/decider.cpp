@@ -11,18 +11,8 @@
 #include <chrono>
 
 #include "decider.h"
+#include "node_marker.h"
 #include "mark.h"
-
-Mark NodeMarker::operator()(const std::string& symbol) const {
-	auto match = std::find_if(_matcher.cbegin(),_matcher.cend(),
-			[&symbol](const std::pair<std::regex,Mark>& p){
-			return std::regex_search(symbol,p.first);
-			});
-	if (match != _matcher.cend())
-		return match->second;
-	else
-		return Mark::LAST_AND_UNUSED_MARK;
-}
 
 Decider::Decider(std::string pathToDiagrams) : _pathToDiagrams(pathToDiagrams)
 {}
@@ -45,11 +35,16 @@ std::shared_future<Mark> Decider::decide(std::string relPath)
 				[&,relPath]() {
 					std::string newDiagram = _pathToDiagrams
 					                       + relPath;
-					DiagramMarker marker(*this, newDiagram,
-						relPath,
-						std::function<Mark(const std::string&)>(_deciderMarker)
-						);
-					return marker.getMark();
+					std::unique_ptr<DiagramMarker> marker(
+						new DiagramMarker(*this,
+							newDiagram, relPath,
+							_deciderMarker
+						));
+					Mark result = marker->getMark();
+					unregisterThread();
+					if (result == Mark::CALL)
+						_diagramPrinters.push_back(std::move(marker));
+					return result;
 				});
 		}
 	}
@@ -57,21 +52,24 @@ std::shared_future<Mark> Decider::decide(std::string relPath)
 	return _markers[relPath];
 }
 
-std::ostream& operator<<(std::ostream& out, Decider& d) {
-	std::unique_lock<std::mutex> lockCounter(d._threadCounterLock);
-	std::unique_lock<std::mutex> lockMap(d._mapLock, std::defer_lock);
-	d._threadFinished.wait(lockCounter,
-			[&d,&lockMap](){
-				return d._threadCounter <= 0 &&
+void Decider::outputAllDiagrams(std::ostream& out) {
+	std::unique_lock<std::mutex> lockCounter(_threadCounterLock);
+	std::unique_lock<std::mutex> lockMap(_mapLock, std::defer_lock);
+	_threadFinished.wait(lockCounter,
+			[this,&lockMap](){
+				std::cerr << "Waking up " << _threadCounter << std::endl;
+				return _threadCounter <= 0 &&
 				       lockMap.try_lock();
 			});
 	lockCounter.unlock();
-	std::cerr << d._markers.size() << " functions explored" << std::endl;
-	for (const auto& p : d._markers) {
+	std::cerr << _markers.size() << " functions explored" << std::endl;
+	for (const auto& p : _markers) {
 		out << p.first << " : " << p.second.get() << "\n";
 	}
+	for (auto&& printer : _diagramPrinters) {
+		printer->outputDiagram();
+	}
 	lockMap.unlock();
-	return out;
 }
 
 void Decider::registerNewThread() {
