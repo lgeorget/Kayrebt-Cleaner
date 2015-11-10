@@ -9,6 +9,7 @@
 #include <iterator>
 
 #include <boost/property_map/property_map.hpp>
+#include <boost/property_map/function_property_map.hpp>
 #include <boost/property_map/dynamic_property_map.hpp>
 #include <boost/graph/graph_utility.hpp>
 #include <boost/graph/graphviz.hpp>
@@ -17,6 +18,7 @@
 #include "diagram_marker.h"
 #include "decider.h"
 #include "mark.h"
+#include "linter.h"
 
 DiagramMarker::DiagramMarker(Decider& decider, std::string diagram,
 	std::string relPath, const std::string& outputDir,
@@ -35,9 +37,9 @@ DiagramMarker::DiagramMarker(Decider& decider, std::string diagram,
 
 	_dp.property("id",    get(&kayrebt::Node::id, _graph));
 	_dp.property("label", get(&kayrebt::Node::label, _graph));
-	_dp.property("shape", get(&kayrebt::Node::shape, _graph));
+//	_dp.property("shape", get(&kayrebt::Node::shape, _graph));
 	_dp.property("type", get(&kayrebt::Node::type, _graph));
-	_dp.property("label", get(&kayrebt::Edge::condition, _graph));
+//	_dp.property("label", get(&kayrebt::Edge::condition, _graph));
 	_dp.property("URL", get(&kayrebt::Node::url, _graph));
 	_dp.property("line", get(&kayrebt::Node::line, _graph));
 //	_dp.property("file",  _gfile);
@@ -63,7 +65,9 @@ Mark DiagramMarker::getMark()
 	for (std::tie(vi,vend) = boost::vertices(_graph) ; vi != vend ; ++vi) {
 		//Decide the mark with as few info as early as possible
 		Mark markFromLabel = _nodeMarker(_graph[*vi].label);
-		if (markFromLabel != Mark::DISCARDABLE &&
+		if (_graph[*vi].url.find("fs/") == std::string::npos || _graph[*vi].url.find_last_of('/') == 1)
+			_mark = Mark::DISCARDABLE;
+		if (//markFromLabel != Mark::DISCARDABLE &&
 		    markFromLabel != Mark::LAST_AND_UNUSED_MARK)
 			_mark =  Mark::CALL;
 
@@ -74,11 +78,11 @@ Mark DiagramMarker::getMark()
 			if (!path.empty()) {
 			/*	std::cerr << "For " << _thisDiagramRelPath << " we need "
 					<< path << std::endl;*/
-				_nodeMarks[*vi] = _decider.decide(path);
+				_nodeMarks[_graph[*vi].id] = _decider.decide(path);
 			}
 		} else {
-			_nodeMarks.emplace(*vi, std::async(std::launch::deferred,
-				[this,&vi,markFromLabel]() {
+			_nodeMarks.emplace(_graph[*vi].id, std::async(std::launch::deferred,
+				[markFromLabel]() {
 					//default nodes to DISCARDABLE
 					return markFromLabel ==
 					       Mark::LAST_AND_UNUSED_MARK ?
@@ -116,8 +120,23 @@ void DiagramMarker::outputDiagram() {
 
 	boost::filesystem::create_directories(_outputDir + "/" + _thisDiagramRelDir);
 	std::ofstream stream_graphout(_outputDir + "/" + _thisDiagramRelPath);
+
+	std::map<kayrebt::NodeDescriptor,Mark> reindexedMarks;
+
+	//remove discardable nodes
+	boost::lint(_graph,
+		    [this](kayrebt::NodeDescriptor n, const kayrebt::GraphType& g) {
+		    	return g[n].type == "init" ||
+		    	       g[n].type == "end_of_activity" ||
+		    	       g[n].type == "end_of_flow" ||
+		    	       _actualMarks[g[n].id] != Mark::DISCARDABLE;
+		    });
+	auto markUnpacker = [this](const kayrebt::NodeDescriptor& n) {
+				return _actualMarks[_graph[n].id];
+			    };
 	_dp.property("mark",
-			boost::make_assoc_property_map(_actualMarks));
+		boost::function_property_map<decltype(markUnpacker),
+			kayrebt::NodeDescriptor>(markUnpacker));
 
 	try {
 		boost::write_graphviz_dp(stream_graphout, _graph, _dp, "id");

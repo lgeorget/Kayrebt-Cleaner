@@ -29,8 +29,8 @@ private:
 	boost::dynamic_properties _dp;
 //	boost::ref_property_map<kayrebt::GraphType*,std::string> _gfile;
 //	boost::ref_property_map<kayrebt::GraphType*,unsigned int> _gline;
-	std::map<kayrebt::NodeDescriptor, std::shared_future<Mark>> _nodeMarks;
-	std::map<kayrebt::NodeDescriptor, Mark> _actualMarks;
+	std::map<unsigned int, std::shared_future<Mark>> _nodeMarks;
+	std::map<unsigned int, Mark> _actualMarks;
 
 public:
 	DiagramMarker(Decider& decider, std::string diagram,
