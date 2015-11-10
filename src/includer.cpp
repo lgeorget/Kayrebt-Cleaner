@@ -21,12 +21,14 @@ using namespace boost;
 namespace kayrebt
 {
 	struct Node {
+		unsigned int node_id;
 		std::string label;
 		std::string shape;
 		std::string type;
 		unsigned int line;
 		std::string url;
 		std::string basepath;
+		std::string mark;
 
 	};
 	struct Edge {
@@ -107,17 +109,6 @@ namespace {
 	private:
 		const kayrebt::GraphType* _graph;
 	};
-
-	class TransformIndex {
-	public:
-		TransformIndex(std::string prefix) : _prefix(prefix) {}
-		std::string operator()(const std::string& index) const {
-			return _prefix + index;
-		}
-
-	private:
-		std::string _prefix;
-	};
 }
 
 int main(int argc, char** argv)
@@ -127,23 +118,27 @@ int main(int argc, char** argv)
 		return 1;
 	}
 
-	kayrebt::GraphType graphin;
-	kayrebt::GraphOutType graphout;
+	kayrebt::GraphOutType graphin,graphout;
 
-	dynamic_properties dp_in(ignore_other_properties);
-	dp_in.property("label", get(&kayrebt::Node::label, graphin));
-	dp_in.property("shape", get(&kayrebt::Node::shape, graphin));
-	dp_in.property("type", get(&kayrebt::Node::type, graphin));
-	dp_in.property("label", get(&kayrebt::Edge::condition, graphin));
-	dp_in.property("URL", get(&kayrebt::Node::url, graphin));
-	dp_in.property("basepath", get(&kayrebt::Node::basepath, graphin));
-	dynamic_properties dp_out(ignore_other_properties);
+	dynamic_properties dp(ignore_other_properties),
+	                   dp_out(ignore_other_properties),
+	                   dp_add(ignore_other_properties);
+	dp.property("node_id", get(&kayrebt::Node::node_id, graphin));
+	dp.property("label", get(&kayrebt::Node::label, graphin));
+	dp.property("shape", get(&kayrebt::Node::shape, graphin));
+	dp.property("type", get(&kayrebt::Node::type, graphin));
+	dp.property("label", get(&kayrebt::Edge::condition, graphin));
+	dp.property("URL", get(&kayrebt::Node::url, graphin));
+	dp.property("basepath", get(&kayrebt::Node::basepath, graphin));
+	dp.property("mark", get(&kayrebt::Node::mark, graphin));
+	dp_out.property("node_id", get(&kayrebt::Node::node_id, graphout));
 	dp_out.property("label", get(&kayrebt::Node::label, graphout));
 	dp_out.property("shape", get(&kayrebt::Node::shape, graphout));
 	dp_out.property("type", get(&kayrebt::Node::type, graphout));
 	dp_out.property("label", get(&kayrebt::Edge::condition, graphout));
 	dp_out.property("URL", get(&kayrebt::Node::url, graphout));
 	dp_out.property("basepath", get(&kayrebt::Node::basepath, graphout));
+	dp_out.property("mark", get(&kayrebt::Node::mark, graphout));
 
 	std::string dir(argv[1]);
 	if (dir[dir.length() - 1] != '/')
@@ -156,12 +151,14 @@ int main(int argc, char** argv)
 
 	try {
 		std::ifstream stream_graphin(dir + inputGraph);
-		if (!read_graphviz(stream_graphin, graphin, dp_in, "id")) {
+		if (!read_graphviz(stream_graphin, graphin, dp, "node_id")) {
 			cerr << "FATAL: Could not parse a graphviz graph from " << argv[1] << endl;
 			return 2;
 		}
-		kayrebt::NodeIterator vi,vend;
-		for(tie(vi,vend) = vertices(graphin) ; vi != vend ; ++vi) {
+		kayrebt::NodeOutIterator vi,vend;
+		tie(vi,vend) = vertices(graphin);
+		for(unsigned int index=0 ; vi != vend ; ++vi,index++) {
+			graphin[*vi].node_id = index;
 			if (graphin[*vi].type == "call")
 				graphin[*vi].basepath = basepath;
 		}
@@ -176,89 +173,83 @@ int main(int argc, char** argv)
 	do {
 		replacements = 0;
 		tries--;
-		graphout.clear();
 
 		std::vector<kayrebt::NodeOutDescriptor> vertexMap(num_vertices(graphin));
-		auto inOutVertexMap = make_iterator_property_map(vertexMap.begin(),get(vertex_index,graphin));
-		copy_graph(graphin,graphout,orig_to_copy(inOutVertexMap));
+		auto inOutVertexMap = make_iterator_property_map(vertexMap.begin(),get(&kayrebt::Node::node_id,graphin));
+		copy_graph(graphin,graphout,orig_to_copy(inOutVertexMap).
+					    vertex_index_map(get(&kayrebt::Node::node_id,graphin)));
 
-		kayrebt::NodeIterator vi,vnew,vend;
+		kayrebt::NodeOutIterator vi,vnew,vend;
 		tie(vi,vend) = vertices(graphin);
 		for (vnew = vi ; vi != vend ; vi = vnew) {
 			++vnew;
 
-			auto expandable = [&graphin](const kayrebt::NodeDescriptor& v) {
-				return graphin[v].label.find("__builtin") == std::string::npos &&
-					graphin[v].label.find("ERR") == std::string::npos &&
-					graphin[v].label.find("current") == std::string::npos &&
-					graphin[v].label.find("lock") == std::string::npos &&
-					graphin[v].label.find("lru") == std::string::npos &&
-					graphin[v].label.find("rcu") == std::string::npos &&
-					graphin[v].label.find("arch") == std::string::npos &&
-					graphin[v].label.find("native") == std::string::npos &&
-					graphin[v].label.find("__read_once_size") == std::string::npos &&
-					graphin[v].label.find("atomic") == std::string::npos &&
-					graphin[v].label.find("log") == std::string::npos &&
-					graphin[v].label.find("print") == std::string::npos &&
-					graphin[v].label.find("bit") == std::string::npos &&
-					graphin[v].label.find("cpu") == std::string::npos &&
-					graphin[v].url.find("mm/") == std::string::npos &&
-					graphin[v].url.find("arch/") == std::string::npos &&
-					graphin[v].url.find("panic.c/") == std::string::npos &&
-					!graphin[v].url.empty();
+			auto expandable = [&graphin](const kayrebt::NodeOutDescriptor& v) {
+				return !graphin[v].url.empty() &&
+				       graphin[v].type == "call" &&
+				       graphin[v].mark == "CALL";
 			};
 
-			if (graphin[*vi].type == "call" && expandable(*vi)) {
-				std::cerr << "Replacing " << graphin[*vi].label << " with " << graphin[*vi].url << std::endl;
+			auto discardable = [&graphin](const kayrebt::NodeOutDescriptor& v) {
+				return graphin[v].type != "init" &&
+				       graphin[v].type != "end_of_activity" &&
+				       graphin[v].type != "end_of_flow" &&
+				       graphin[v].mark == "DISCARDABLE";
+			};
+
+			if (discardable(*vi) || expandable(*vi)) {
+				//std::cerr << "Replacing " << graphin[*vi].label << " with " << graphin[*vi].url << std::endl;
 				replacements++;
-				std::string relpath, relpathbase;
-				int posLastSlash = graphin[*vi].url.find_last_of('/');
-				if (posLastSlash == 1) {
-					relpathbase = graphin[*vi].basepath;
-					relpath = relpathbase + graphin[*vi].url ;
-				} else {
-					relpathbase = graphin[*vi].url.substr(0,posLastSlash+1);
-					relpath = graphin[*vi].url;
-				}
-				std::cerr << "Opening " << dir << relpath << ".dot" << std::endl;
 				kayrebt::GraphType graphadd;
-				dynamic_properties dp_add(ignore_other_properties);
-				dp_add.property("label", get(&kayrebt::Node::label, graphadd));
-				dp_add.property("shape", get(&kayrebt::Node::shape, graphadd));
-				dp_add.property("type", get(&kayrebt::Node::type, graphadd));
-				dp_add.property("label", get(&kayrebt::Edge::condition, graphadd));
-				dp_add.property("URL", get(&kayrebt::Node::url, graphadd));
-				dp_add.property("basepath", get(&kayrebt::Node::basepath, graphadd));
-				try {
-					std::ifstream stream_graphadd(dir + relpath + ".dot");
-					if (!read_graphviz(stream_graphadd,graphadd,  dp_add, "id")) {
-						cerr << "ERROR: Could not parse a graphviz graph from " << argv[1] << endl;
-						continue; //if something went wrong, we just leave the node as it is
+				std::string relpath, relpathbase;
+
+				if (graphin[*vi].mark != "DISCARDABLE") {
+					int posLastSlash = graphin[*vi].url.find_last_of('/');
+					if (posLastSlash == 1) {
+						relpathbase = graphin[*vi].basepath;
+						relpath = relpathbase + graphin[*vi].url ;
+					} else {
+						relpathbase = graphin[*vi].url.substr(0,posLastSlash+1);
+						relpath = graphin[*vi].url;
 					}
-				} catch (graph_exception& e) {
-					cerr << "ERROR: The graph could not be parsed: " << e.what() << endl;
-					graphout[inOutVertexMap[*vi]].type = "non-expandable call";
-					continue;
+					//std::cerr << "Opening " << dir << relpath << ".dot" << std::endl;
+					try {
+						dp_add.property("node_id", get(&kayrebt::Node::node_id, graphadd));
+						dp_add.property("label", get(&kayrebt::Node::label, graphadd));
+						dp_add.property("shape", get(&kayrebt::Node::shape, graphadd));
+						dp_add.property("type", get(&kayrebt::Node::type, graphadd));
+						dp_add.property("label", get(&kayrebt::Edge::condition, graphadd));
+						dp_add.property("URL", get(&kayrebt::Node::url, graphadd));
+						dp_add.property("basepath", get(&kayrebt::Node::basepath, graphadd));
+						dp_add.property("mark", get(&kayrebt::Node::mark, graphadd));
+						std::ifstream stream_graphadd(dir + relpath + ".dot");
+						if (!read_graphviz(stream_graphadd,graphadd,  dp_add, "node_id")) {
+							//cerr << "ERROR: Could not parse a graphviz graph from " << argv[1] << endl;
+							continue; //if something went wrong, we just leave the node as it is
+						}
+					} catch (graph_exception& e) {
+						//cerr << "ERROR: The graph could not be parsed: " << e.what() << endl;
+						graphout[inOutVertexMap[*vi]].type = "non-expandable call";
+						continue;
+					}
 				}
 				auto filtered_gadd = filter_graph(graphadd, EdgePredicate(&graphadd), NodePredicate(&graphadd));
 
 				auto beginPredicate = [&graphadd](kayrebt::NodeDescriptor n) {
-					bool result = false;
 					kayrebt::PredecessorIterator vi,vend;
-					for (boost::tie(vi,vend) = inv_adjacent_vertices(n,graphadd) ; vi != vend && !result ; ++vi) {
-						result = graphadd[*vi].type == "init";
-					}
-					return result;
+					boost::tie(vi,vend) = inv_adjacent_vertices(n,graphadd);
+					return std::any_of(vi, vend,
+						[&graphadd](const kayrebt::NodeDescriptor& pred) {
+							return graphadd[pred].type == "init";
+						});
 				};
-				auto endPredicate = [&filtered_gadd,&graphadd](kayrebt::NodeDescriptor n) {
-					if (out_degree(n,filtered_gadd) > 0)
-						return false;
-					bool result = true;
+				auto endPredicate = [&graphadd](kayrebt::NodeDescriptor n) {
 					kayrebt::SuccessorIterator vi,vend;
-					for (boost::tie(vi,vend) = adjacent_vertices(n,graphadd) ; vi != vend && result ; ++vi) {
-						result = graphadd[*vi].type == "end_of_activity";
-					}
-					return result;
+					boost::tie(vi,vend) = adjacent_vertices(n,graphadd);
+					return std::any_of(vi, vend,
+						[&graphadd](const kayrebt::NodeDescriptor& succ) {
+							return graphadd[succ].type == "end_of_activity";
+						});
 				};
 
 				//We have to remap the nodes because filtering could
@@ -280,20 +271,18 @@ int main(int argc, char** argv)
 			}
 		}
 		static int round = 1;
-		std::cerr << "Finished round " << round++ << std::endl;
+		std::cerr << "Finished round " << round++ << " ; " << num_vertices(graphout) << " vertices" << std::endl;
 
-		//Ensure that each node has a unique index
-		vertexOutIndexMap.clear();
+		//Ensure that each node has a unique index in the range [0;num_vertices(graphout)-1]
 		kayrebt::NodeOutIterator vouti,voutend;
 		tie(vouti,voutend) = vertices(graphout);
 		for (unsigned int index=0 ; vouti != voutend ; index++, ++vouti)
-			vertexOutIndexMap.emplace(*vouti,index);
-		dp_out.property("node_id",make_assoc_property_map(vertexOutIndexMap));
+			graphout[*vouti].node_id = index;
 
 		graphin.clear();
-		copy_graph(graphout, graphin, vertex_index_map(make_assoc_property_map(vertexOutIndexMap)));
+		graphin.swap(graphout);
 	} while (replacements > 0 && tries > 0);
 
-	write_graphviz_dp(std::cout,graphout,dp_out/*,"node_id"*/);
+	write_graphviz_dp(std::cout,graphin,dp/*,"node_id"*/);
 	return 0;
 }

@@ -21,7 +21,6 @@ namespace kayrebt
 		std::string type;
 		unsigned int line;
 		std::string url;
-
 	};
 	struct Edge {
 		std::string condition;
@@ -35,7 +34,7 @@ namespace kayrebt
 	 * Underlying type of Boost graph used for representation
 	 * and manipulation of activity diagrams
 	 */
-	using GraphType = boost::adjacency_list<boost::setS,boost::vecS,boost::bidirectionalS,Node,Edge,GraphAttr>;
+	using GraphType = boost::adjacency_list<boost::setS,boost::listS,boost::bidirectionalS,Node,Edge,GraphAttr>;
 	/**
 	 * Underlying type of Boost vertex descriptor for manipulation
 	 * of the nodes in the activity diagrams
@@ -50,7 +49,11 @@ namespace kayrebt
 	 * Type of Boost iterators for "inverse adjacent vertices", i.e.
 	 * predecessors, of a given vertex
 	 */
-	using PredecessorIterator = boost::inv_adjacency_iterator_generator<GraphType,NodeDescriptor,boost::graph_traits<GraphType>::in_edge_iterator>::type;
+	using PredecessorIterator = GraphType::inv_adjacency_iterator;
+	using SuccessorIterator = boost::graph_traits<GraphType>::adjacency_iterator;
+
+	using InEdgeIterator = boost::graph_traits<GraphType>::in_edge_iterator;
+	using OutEdgeIterator = boost::graph_traits<GraphType>::out_edge_iterator;
 
 	extern const NodeDescriptor NO_NODE;
 }
