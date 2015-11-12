@@ -19,6 +19,7 @@ private:
 	std::string _pathToDiagrams;
 	std::mutex _mapLock;
 	std::mutex _threadCounterLock;
+	std::mutex _printerLock;
 	int _threadCounter = 0;
 	std::condition_variable _threadFinished;
 	const NodeMarker _deciderMarker;

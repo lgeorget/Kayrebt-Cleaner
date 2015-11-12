@@ -1,5 +1,6 @@
 #include <boost/config.hpp>
 
+#include <cassert>
 #include <algorithm>
 #include <iostream>
 #include <fstream>
@@ -65,9 +66,7 @@ Mark DiagramMarker::getMark()
 	for (std::tie(vi,vend) = boost::vertices(_graph) ; vi != vend ; ++vi) {
 		//Decide the mark with as few info as early as possible
 		Mark markFromLabel = _nodeMarker(_graph[*vi].label);
-		if (_graph[*vi].url.find("fs/") == std::string::npos || _graph[*vi].url.find_last_of('/') == 1)
-			_mark = Mark::DISCARDABLE;
-		if (//markFromLabel != Mark::DISCARDABLE &&
+		if (markFromLabel != Mark::DISCARDABLE &&
 		    markFromLabel != Mark::LAST_AND_UNUSED_MARK)
 			_mark =  Mark::CALL;
 
@@ -114,14 +113,19 @@ void DiagramMarker::outputDiagram() {
 	// acquired from the future<Mark>, so we need something a little more
 	// sophisticated than std::transform(_nodeMarks,_actualMarks,get())
 	for (const auto& p : _nodeMarks) {
-		if (_actualMarks.find(p.first) == _actualMarks.cend())
-			_actualMarks[p.first] = p.second.get();
+		if (_actualMarks.find(p.first) == _actualMarks.cend()) {
+			std::shared_future<Mark> computedMark = p.second;
+			assert(p.second.valid());
+			_actualMarks[p.first] = computedMark.get();
+		}
 	}
 
 	boost::filesystem::create_directories(_outputDir + "/" + _thisDiagramRelDir);
 	std::ofstream stream_graphout(_outputDir + "/" + _thisDiagramRelPath);
-
-	std::map<kayrebt::NodeDescriptor,Mark> reindexedMarks;
+	if (!stream_graphout) {
+		std::cerr << "Could not open " << _thisDiagramRelPath << " for writing" << std::endl;
+		return;
+	}
 
 	//remove discardable nodes
 	boost::lint(_graph,
@@ -129,10 +133,10 @@ void DiagramMarker::outputDiagram() {
 		    	return g[n].type == "init" ||
 		    	       g[n].type == "end_of_activity" ||
 		    	       g[n].type == "end_of_flow" ||
-		    	       _actualMarks[g[n].id] != Mark::DISCARDABLE;
+		    	       _actualMarks.at(g[n].id) != Mark::DISCARDABLE;
 		    });
 	auto markUnpacker = [this](const kayrebt::NodeDescriptor& n) {
-				return _actualMarks[_graph[n].id];
+				return _actualMarks.at(_graph[n].id);
 			    };
 	_dp.property("mark",
 		boost::function_property_map<decltype(markUnpacker),

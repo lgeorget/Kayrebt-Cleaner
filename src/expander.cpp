@@ -45,7 +45,7 @@ int main(int argc, char** argv)
 	}
 
 	if (access((dir + inputGraph).c_str(), R_OK) != 0) {
-		std::cerr << "ERROR : graph \"" << dir << "\" does not exist"
+		std::cerr << "ERROR : graph \"" << dir << inputGraph << "\" does not exist"
 			" or is not accessible." << std::endl;
 		usage(argv[0], 3);
 	}

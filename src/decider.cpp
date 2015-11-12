@@ -43,9 +43,11 @@ std::shared_future<Mark> Decider::decide(std::string relPath)
 							_deciderMarker
 						));
 					Mark result = marker->getMark();
-					unregisterThread();
-					if (result == Mark::CALL)
+					if (result == Mark::CALL) {
+						std::unique_lock<std::mutex> lock(_printerLock);
 						_diagramPrinters.push_back(std::move(marker));
+					}
+					unregisterThread();
 					return result;
 				});
 		}
@@ -66,11 +68,14 @@ void Decider::outputAllDiagrams(std::ostream& out) {
 	lockCounter.unlock();
 	std::cerr << _markers.size() << " functions explored" << std::endl;
 	for (const auto& p : _markers) {
-		out << p.first << " : " << p.second.get() << "\n";
+		std::shared_future<Mark> computedMark = p.second;
+		out << p.first << " : " << computedMark.get() << "\n";
 	}
+	std::cerr << "All marks computed" << std::endl;
 	for (auto&& printer : _diagramPrinters) {
 		printer->outputDiagram();
 	}
+	std::cerr << "All diagrams exported to the output directory" << std::endl;
 	lockMap.unlock();
 }
 
