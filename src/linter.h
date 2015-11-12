@@ -44,7 +44,7 @@ namespace boost
 			return it->second;
 		};
 
-		InputVertexIterator vi,vend,vdel;
+		InputVertexIterator vi,vend;
 		boost::tie(vi,vend) = vertices(gin);
 		for ( ; vi != vend ; ++vi) {
 			if (!toKeep(*vi,gin))
