@@ -12,127 +12,22 @@
 #include <boost/graph/graph_utility.hpp>
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/adjacency_list.hpp>
-namespace kayrebt
-{
-	struct Node {
-		unsigned int id;
-		std::string label;
-		std::string shape;
-		std::string type;
-		unsigned int line;
-		std::string url;
-		std::string mark;
-		std::vector<unsigned int> predecessors;
-		std::vector<std::string> args;
-	};
-	struct Edge {
-		std::string condition;
-	};
-	struct GraphAttr {
-		std::string file;
-		unsigned int line;
-	};
 
-	/**
-	 * Underlying type of Boost graph used for representation
-	 * and manipulation of activity diagrams
-	 */
-	using GraphType = boost::adjacency_list<boost::vecS,boost::vecS,boost::bidirectionalS,Node,Edge,GraphAttr>;
-	/**
-	 * Underlying type of Boost vertex descriptor for manipulation
-	 * of the nodes in the activity diagrams
-	 */
-	using NodeDescriptor = boost::graph_traits<GraphType>::vertex_descriptor;
-	using EdgeDescriptor = boost::graph_traits<GraphType>::edge_descriptor;
-	/**
-	 * Underlying type of Boost vertex iterator for use in Boost algorithms
-	 * on the nodes in the activity diagrams
-	 */
-	using NodeIterator = boost::graph_traits<GraphType>::vertex_iterator;
-	/**
-	 * Type of Boost iterators for "inverse adjacent vertices", i.e.
-	 * predecessors, of a given vertex
-	 */
-	using PredecessorIterator = GraphType::inv_adjacency_iterator;
-	using SuccessorIterator = boost::graph_traits<GraphType>::adjacency_iterator;
-
-	using InEdgeIterator = boost::graph_traits<GraphType>::in_edge_iterator;
-	using OutEdgeIterator = boost::graph_traits<GraphType>::out_edge_iterator;
-
-	extern const NodeDescriptor NO_NODE;
-
-	struct comma_is_separator : std::ctype<char> {
-		comma_is_separator(std::size_t refs = 0) : std::ctype<char>(get_table(), false, refs) {}
-		static mask const* get_table()
-		{
-			static std::vector<mask> v{classic_table(), classic_table() + table_size};
-			v[',']  |= space;
-			v['"']  |= space;
-			v['\n'] &= ~space;
-			v[' '] &= ~space;
-			return &v[0];
-		}
-	};
-}
-
-// It's boost-compliant to add explicit template specialization to namespace
-namespace boost {
-namespace conversion {
-namespace detail {
-	template<>
-	bool try_lexical_convert<std::vector<unsigned int>,std::string>(const std::string& arg, std::vector<unsigned int>& result)
-	{
-		std::istringstream it(arg);
-		it.imbue(std::locale(it.getloc(), new kayrebt::comma_is_separator));
-		result = std::vector<unsigned int>{
-				std::istream_iterator<unsigned int>(it),
-				std::istream_iterator<unsigned int>()
-		};
-
-		return it.eof();
-	}
-
-	template<>
-	bool try_lexical_convert<std::vector<std::string>,std::string>(const std::string& arg, std::vector<std::string>& result)
-	{
-		std::istringstream it(arg);
-		it.imbue(std::locale(it.getloc(), new kayrebt::comma_is_separator));
-		result = std::vector<std::string>{
-				std::istream_iterator<std::string>(it),
-				std::istream_iterator<std::string>()
-		};
-
-		return it.eof();
-	}
-}
-}
-}
-
-namespace std {
-std::ostream& operator<<(std::ostream& out, const std::vector<unsigned int>& arg)
-{
-	std::copy(arg.cbegin(), arg.cend(), std::ostream_iterator<unsigned int>(out,","));
-	return out;
-}
-std::ostream& operator<<(std::ostream& out, const std::vector<std::string>& arg)
-{
-	std::copy(arg.cbegin(), arg.cend(), std::ostream_iterator<std::string>(out,","));
-	return out;
-}
-}
+#include "converters.h"
+#include "types.h"
+#include "constraint_parser.h"
 
 using namespace boost;
 using namespace kayrebt;
 
 using State = std::tuple<NodeDescriptor,
                          std::vector<NodeDescriptor>,
-                         std::vector<std::string>,
+                         std::vector<Constraint>,
                          int>;
 
 
 inline EdgeDescriptor pred(NodeDescriptor n, GraphType& graph)
 {
-	assert(in_degree(n,graph) == 1);
 	kayrebt::InEdgeIterator predi;
 	std::tie(predi,std::ignore) = in_edges(n,graph);
 	return *predi;
@@ -141,21 +36,24 @@ inline EdgeDescriptor pred(NodeDescriptor n, GraphType& graph)
 void examine_all_paths(NodeDescriptor nf, NodeDescriptor no, GraphType& graph)
 {
 	std::stack<State> states;
+
 	states.push(State{nf, {}, {}, -1});
 	while (!states.empty()) {
-		NodeDescriptor n;
-		std::vector<NodeDescriptor> l;
-		std::vector<std::string> c;
-		int w = -1;
-		std::tie(n,l,c,w) = states.top();
+		auto topstate = states.top();
+		NodeDescriptor n = std::get<0>(topstate);
+		std::vector<NodeDescriptor>& l = std::get<1>(topstate);
+		std::vector<Constraint>& c = std::get<2>(topstate);
+		int w = std::get<3>(topstate);
 		states.pop();
 
+#ifndef NDEBUG
 		std::cerr << "Reached node " << graph[n].id << "\n";
 		std::cerr << "Path: ";
 		std::transform(l.cbegin(), l.cend(),
 				std::ostream_iterator<unsigned int>(std::cerr, " - "),
 				[&graph](const NodeDescriptor& n) { return graph[n].id; });
 		std::cerr << std::endl;
+#endif
 
 		if (n == no) //base case, we reached the observation node, OK
 			continue;
@@ -165,20 +63,20 @@ void examine_all_paths(NodeDescriptor nf, NodeDescriptor no, GraphType& graph)
 
 		if (graph[n].type == "assign") {
 			EdgeDescriptor p = pred(n, graph);
-			c.push_back(graph[n].label);
+			c.emplace_back(graph[n].label);
 			if (!graph[p].condition.empty())
-				c.push_back(graph[p].condition);
+				c.emplace_back(graph[p].condition);
 
 			l.push_back(n);
 			states.push(State{source(p,graph), l, c, w});
 		} else if (graph[n].type == "phi") {
 			std::cerr << "number of args " << graph[n].args.size() << std::endl;
 			for (unsigned int i = 0 ; i < graph[n].args.size() ; i++) {
-				std::vector<std::string> newc{c};
-				newc.push_back(graph[n].label.substr(0,graph[n].label.find(" = ")) + " = " + graph[n].args[i]);
+				std::vector<Constraint> newc{c};
+				newc.emplace_back(graph[n].label.substr(0,graph[n].label.find(" = ")) + " = " + graph[n].args[i]);
 				EdgeDescriptor p = pred(n, graph);
 				if (!graph[p].condition.empty())
-					newc.push_back(graph[p].condition);
+					newc.emplace_back(graph[p].condition);
 				std::vector<NodeDescriptor> newl{l};
 				newl.push_back(n);
 				states.push(State{source(p,graph), std::move(newl), std::move(newc), graph[n].predecessors[i]});
@@ -192,23 +90,25 @@ void examine_all_paths(NodeDescriptor nf, NodeDescriptor no, GraphType& graph)
 				if (w == -1 || graph[maybe_pred].id == static_cast<unsigned int>(w)) {
 					std::vector<NodeDescriptor> newl{l};
 					newl.push_back(n);
-					std::vector<std::string> newc{c};
-					newc.push_back(graph[*predi].condition);
-					states.push(State{source(*predi,graph), std::move(newl), c, -1});
+					std::vector<Constraint> newc{c};
+					if (!graph[*predi].condition.empty())
+						newc.emplace_back(graph[*predi].condition);
+					states.push(State{source(*predi,graph), std::move(newl), newc, -1});
 				}
 			}
 		} else {
-			std::cout << "possible path ";
-			std::transform(l.cbegin(), l.cend(),
+			std::cout << "possible path\n";
+			std::transform(l.crbegin(), l.crend(),
 					std::ostream_iterator<std::string>(std::cout, "\n"),
 					[&graph](kayrebt::NodeDescriptor n) {
 						return std::to_string(graph[n].id) +
 						" (" + graph[n].label + ")";
 					});
-			std::cout << std::endl;
-			std::cout << "Associated constraints: ";
-			std::copy(c.cbegin(), c.cend(),
-					std::ostream_iterator<std::string>(std::cout, " && "));
+			std::cout << "\n";
+			std::cout << "Associated constraints: \n";
+			Constraint aggregate = Constraint::conjunct(c);
+			std::cout <<  aggregate << std::endl;
+			std::cout << "Yices says " << (Constraint::check_unsatisfiability(aggregate) ? "unsat :-)" : "sat :-(") << std::endl;
 		}
 
 	}
