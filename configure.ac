@@ -4,6 +4,7 @@
 AC_PREREQ([2.69])
 AC_INIT([Kayrebt::Cleaner], [0.1], [laurent.georget@inria.fr])
 AM_INIT_AUTOMAKE([1.11 foreign -Wall -Werror])
+AC_CONFIG_SUBDIRS([path_examiner])
 AC_CONFIG_SRCDIR([src/types.h])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIRS([m4])
